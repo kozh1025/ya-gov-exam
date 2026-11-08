@@ -65,7 +65,7 @@ const SJ=['國文','公民與英文','法學大意','行政學大意'];
 const YEARS=[115,114,113,112,111,110,109,108,107,106];
 const Q=D.map(r=>({y:r[0],s:r[1],n:r[2],stem:r[3],opts:r[4],ans:r[5],img:r[6]||'',id:r[0]+'-'+r[1]+'-'+r[2]}));
 const L='ABCDE';
-let ST={},U={names:['使用者1','使用者2'],cur:0};
+let ST={},U={names:['秀秀','秋秋'],cur:0};
 try{const u=JSON.parse(localStorage.getItem('yb-gov-users')||'null');if(u&&u.names&&u.names.length==2)U=u}catch(e){}
 function ukey(){return 'yb-gov-v1-u'+U.cur}
 function loadST(){ST={};try{let s=localStorage.getItem(ukey());if(s===null&&U.cur==0)s=localStorage.getItem('yb-gov-v1');ST=JSON.parse(s||'{}')}catch(e){ST={}}}
