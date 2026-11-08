@@ -66,15 +66,14 @@ const YEARS=[115,114,113,112,111,110,109,108,107,106];
 const Q=D.map(r=>({y:r[0],s:r[1],n:r[2],stem:r[3],opts:r[4],ans:r[5],img:r[6]||'',id:r[0]+'-'+r[1]+'-'+r[2]}));
 const L='ABCDE';
 let ST={},U={names:['秀秀','秋秋'],cur:0};
-try{const u=JSON.parse(localStorage.getItem('yb-gov-users')||'null');if(u&&u.names&&u.names.length==2)U=u}catch(e){}
+try{const u=JSON.parse(localStorage.getItem('yb-gov-users')||'null');if(u&&(u.cur===0||u.cur===1))U.cur=u.cur}catch(e){}
 function ukey(){return 'yb-gov-v1-u'+U.cur}
 function loadST(){ST={};try{let s=localStorage.getItem(ukey());if(s===null&&U.cur==0)s=localStorage.getItem('yb-gov-v1');ST=JSON.parse(s||'{}')}catch(e){ST={}}}
 function save(){try{localStorage.setItem(ukey(),JSON.stringify(ST))}catch(e){}}
 function saveU(){try{localStorage.setItem('yb-gov-users',JSON.stringify(U))}catch(e){}}
 loadST();
-function userBar(){$('#users').innerHTML='<span class="small">目前使用者：</span>'+U.names.map((n,i)=>`<button class="chip ${U.cur==i?'on':''}" onclick="switchUser(${i})">${esc(n)}</button>`).join('')+'<button class="chip" onclick="renameUser()">改名</button>'}
+function userBar(){$('#users').innerHTML='<span class="small">目前使用者：</span>'+U.names.map((n,i)=>`<button class="chip ${U.cur==i?'on':''}" onclick="switchUser(${i})">${esc(n)}</button>`).join('')}
 function switchUser(i){if(i==U.cur)return;if(M&&M.l&&!M.done&&!confirm('整卷作答中，換人會放棄這份卷子，確定？'))return;U.cur=i;saveU();loadST();P=null;M=null;if(timerH){clearInterval(timerH);timerH=null}userBar();go(tab)}
-function renameUser(){const n=prompt('目前這位使用者的名字：',U.names[U.cur]);if(n&&n.trim()){U.names[U.cur]=n.trim().slice(0,8);saveU();userBar()}}
 function rec(q,ok){const r=ST[q.id]||{r:0,w:0,last:null};if(ok)r.r++;else r.w++;r.last=ok;ST[q.id]=r;save()}
 const $=s=>document.querySelector(s);
 const isMulti=q=>q.ans.length>1;
