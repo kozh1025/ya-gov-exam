@@ -55,6 +55,7 @@ a{color:var(--blue)}
 <div class="wrap">
 <h1>初等考試　一般行政　歷屆題庫</h1>
 <div class="meta">106～115 年 · 國文／公民與英文／法學大意／行政學大意 · 共 <span id="total"></span> 題 · 題目與答案取自考選部公布的考畢試題</div>
+<div class="row" id="users" style="align-items:center"></div>
 <div class="tabs" id="tabs"></div>
 <div id="view"></div>
 </div>
@@ -64,9 +65,16 @@ const SJ=['國文','公民與英文','法學大意','行政學大意'];
 const YEARS=[115,114,113,112,111,110,109,108,107,106];
 const Q=D.map(r=>({y:r[0],s:r[1],n:r[2],stem:r[3],opts:r[4],ans:r[5],img:r[6]||'',id:r[0]+'-'+r[1]+'-'+r[2]}));
 const L='ABCDE';
-let ST={};
-try{ST=JSON.parse(localStorage.getItem('yb-gov-v1')||'{}')}catch(e){ST={}}
-function save(){try{localStorage.setItem('yb-gov-v1',JSON.stringify(ST))}catch(e){}}
+let ST={},U={names:['使用者1','使用者2'],cur:0};
+try{const u=JSON.parse(localStorage.getItem('yb-gov-users')||'null');if(u&&u.names&&u.names.length==2)U=u}catch(e){}
+function ukey(){return 'yb-gov-v1-u'+U.cur}
+function loadST(){ST={};try{let s=localStorage.getItem(ukey());if(s===null&&U.cur==0)s=localStorage.getItem('yb-gov-v1');ST=JSON.parse(s||'{}')}catch(e){ST={}}}
+function save(){try{localStorage.setItem(ukey(),JSON.stringify(ST))}catch(e){}}
+function saveU(){try{localStorage.setItem('yb-gov-users',JSON.stringify(U))}catch(e){}}
+loadST();
+function userBar(){$('#users').innerHTML='<span class="small">目前使用者：</span>'+U.names.map((n,i)=>`<button class="chip ${U.cur==i?'on':''}" onclick="switchUser(${i})">${esc(n)}</button>`).join('')+'<button class="chip" onclick="renameUser()">改名</button>'}
+function switchUser(i){if(i==U.cur)return;if(M&&M.l&&!M.done&&!confirm('整卷作答中，換人會放棄這份卷子，確定？'))return;U.cur=i;saveU();loadST();P=null;M=null;if(timerH){clearInterval(timerH);timerH=null}userBar();go(tab)}
+function renameUser(){const n=prompt('目前這位使用者的名字：',U.names[U.cur]);if(n&&n.trim()){U.names[U.cur]=n.trim().slice(0,8);saveU();userBar()}}
 function rec(q,ok){const r=ST[q.id]||{r:0,w:0,last:null};if(ok)r.r++;else r.w++;r.last=ok;ST[q.id]=r;save()}
 const $=s=>document.querySelector(s);
 const isMulti=q=>q.ans.length>1;
@@ -160,8 +168,8 @@ function toggleW(id){const e=document.getElementById('w-'+id);if(e.style.display
 function stat(){
   const rows=YEARS.map(y=>{const l=Q.filter(q=>q.s==CUR&&q.y==y),d=l.filter(q=>ST[q.id]),ok=d.filter(q=>ST[q.id].last===true);return `<tr><td>${y} 年</td><td>${d.length}/${l.length}</td><td>${d.length?Math.round(ok.length*100/d.length)+'%':'-'}</td></tr>`}).join('');
   $('#view').innerHTML=`<div class="card">${subjBar()}<h2>${SJ[CUR]}　各年度進度</h2><table><tr><th>年度</th><th>做過/總數</th><th>最近一次答對率</th></tr>${rows}</table></div>
-  <div class="card"><button class="btn ghost" onclick="if(confirm('清除全部科目的紀錄？'))(ST={},save(),stat())">清除全部紀錄</button></div>`}
-$('#total').textContent=Q.length;go('practice');
+  <div class="card"><button class="btn ghost" onclick="if(confirm('清除「'+U.names[U.cur]+'」的全部紀錄？'))(ST={},save(),stat())">清除「目前使用者」的紀錄</button></div>`}
+$('#total').textContent=Q.length;userBar();go('practice');
 </script>
 </body>
 </html>
