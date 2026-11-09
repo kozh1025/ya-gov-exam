@@ -79,6 +79,9 @@ const $=s=>document.querySelector(s);
 const isMulti=q=>q.ans.length>1;
 const pts=q=>isMulti(q)?3:2;
 const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+let SHOWALL=false;
+function toggleAll(){SHOWALL=!SHOWALL;if(tab=='practice')drawP();else if(tab=='mock'){M&&M.done?resultM():drawM()}}
+function allBtn(){return `<button class="btn ghost" style="padding:5px 14px;font-size:14px" onclick="toggleAll()">${SHOWALL?'收合全部答案':'展開全部答案'}</button>`}
 let tab='practice',P=null,M=null,timerH=null,CUR=0;
 try{const c=localStorage.getItem('yb-gov-cur');if(c!==null&&c!=='')CUR=+c}catch(e){}
 function chooseSubj(i){if(M&&M.l&&!M.done&&!confirm('整卷作答中，換科目會放棄這份卷子，確定？'))return;CUR=i;P=null;M=null;if(timerH){clearInterval(timerH);timerH=null}try{localStorage.setItem('yb-gov-cur',i)}catch(e){}go(tab)}
@@ -115,15 +118,16 @@ function startP(){let l=pool();if(!l.length){alert('這個條件下沒有題目'
   if(P.count&&l.length>P.count)l=l.slice(0,P.count);
   P.list=l;P.i=0;P.sel='';P.rev=false;drawP()}
 function drawP(){const q=P.list[P.i];
-  let h=`<div class="small">進度 ${P.i+1} / ${P.list.length}</div><div class="card">${qHTML(q,P.sel,P.rev)}`;
-  if(isMulti(q)&&!P.rev)h+=`<button class="btn" ${P.sel?'':'disabled'} onclick="confirmP()">確認答案</button>`;
+  let h=`<div class="row" style="justify-content:space-between;align-items:center"><span class="small">進度 ${P.i+1} / ${P.list.length}${SHOWALL?'　（看答案模式，不記錄）':''}</span>${allBtn()}</div><div class="card">${qHTML(q,P.sel,P.rev||SHOWALL)}`;
+  if(SHOWALL&&!P.rev)h+=`<div class="fb ok">正確答案：${q.ans}</div>`;
+  if(isMulti(q)&&!P.rev&&!SHOWALL)h+=`<button class="btn" ${P.sel?'':'disabled'} onclick="confirmP()">確認答案</button>`;
   if(P.rev){const ok=P.sel.split('').sort().join('')==q.ans;h+=`<div class="fb ${ok?'ok':'bad'}">${ok?'答對了':'答錯了'}　正確答案：${q.ans}</div>`}
   h+=`<div class="nav"><button class="btn ghost" ${P.i?'':'disabled'} onclick="stepP(-1)">上一題</button><button class="btn ghost" onclick="P.list=null;practice()">結束</button><button class="btn" ${P.i<P.list.length-1?'':'disabled'} onclick="stepP(1)">下一題</button></div></div>`;
   $('#view').innerHTML=h}
 function pick(c){
-  if(tab=='practice'){const q=P.list[P.i];if(P.rev)return;
+  if(tab=='practice'){const q=P.list[P.i];if(P.rev||SHOWALL)return;
     if(isMulti(q)){P.sel=P.sel.includes(c)?P.sel.replace(c,''):(P.sel+c).split('').sort().join('')}else{P.sel=c;confirmP();return}drawP()}
-  else if(tab=='mock'){M.a[M.i]=isMulti(M.l[M.i])?(M.a[M.i]||'').includes(c)?(M.a[M.i]).replace(c,''):((M.a[M.i]||'')+c).split('').sort().join(''):c;drawM()}}
+  else if(tab=='mock'){if(SHOWALL&&!M.done)return;M.a[M.i]=isMulti(M.l[M.i])?(M.a[M.i]||'').includes(c)?(M.a[M.i]).replace(c,''):((M.a[M.i]||'')+c).split('').sort().join(''):c;drawM()}}
 function confirmP(){const q=P.list[P.i];if(!P.sel)return;P.rev=true;rec(q,P.sel.split('').sort().join('')==q.ans);drawP()}
 function stepP(d){P.i+=d;P.sel='';P.rev=false;drawP();window.scrollTo(0,0)}
 /* ---------- 整卷 ---------- */
@@ -138,18 +142,21 @@ function drawM(){
   if(M.done){resultM();return}
   const q=M.l[M.i],a=M.a[M.i]||'';
   let g=M.l.map((x,i)=>`<button class="g ${M.a[i]?'done':''}" onclick="M.i=${i};drawM()">${i+1}</button>`).join('');
-  $('#view').innerHTML=`<div class="timer">剩餘 <span id="tm"></span></div> <span class="small">${M.y} 年 ${SJ[M.s]}　已答 ${M.a.filter(Boolean).length} / ${M.l.length}</span><div class="card">${qHTML(q,a,false)}
+  $('#view').innerHTML=`<div class="timer">剩餘 <span id="tm"></span></div> <span class="small">${M.y} 年 ${SJ[M.s]}　已答 ${M.a.filter(Boolean).length} / ${M.l.length}</span> ${allBtn()}<div class="card">${qHTML(q,a,SHOWALL)}${SHOWALL?`<div class="fb ok">正確答案：${q.ans}</div>`:''}
   <div class="nav"><button class="btn ghost" ${M.i?'':'disabled'} onclick="M.i--;drawM()">上一題</button><button class="btn ghost" ${M.i<M.l.length-1?'':'disabled'} onclick="M.i++;drawM()">下一題</button></div></div>
   <div class="card"><div class="grid">${g}</div><button class="btn" onclick="if(confirm('確定交卷？'))submitM()">交卷</button></div>`}
 function submitM(){M.done=true;if(timerH){clearInterval(timerH);timerH=null}M.l.forEach((q,i)=>rec(q,(M.a[i]||'')==q.ans));resultM()}
 function resultM(){
   let sc=0,max=0;M.l.forEach((q,i)=>{max+=pts(q);if((M.a[i]||'')==q.ans)sc+=pts(q)});
-  const g=M.l.map((q,i)=>`<button class="g ${(M.a[i]||'')==q.ans?'ok':'bad'}" onclick="M.i=${i};resultM()">${i+1}</button>`).join('');
-  const q=M.l[M.i],a=M.a[M.i]||'';
+  const g=M.l.map((q,i)=>`<button class="g ${(M.a[i]||'')==q.ans?'ok':'bad'}" onclick="openR(${i})">${i+1}</button>`).join('');
+  const list=M.l.map((q,i)=>{const a=M.a[i]||'',ok=a==q.ans;
+    return `<details id="r${i}" ${SHOWALL?'open':''} style="border-top:1px solid var(--line);padding:6px 0"><summary style="cursor:pointer"><span class="tag ${ok?'t-ok':'t-bad'}">${ok?'對':'錯'}</span>第 ${q.n} 題　你的答案 ${a||'未作答'}　正確答案 ${q.ans}</summary>${qHTML(q,a,true)}<div class="fb ${ok?'ok':'bad'}">你的答案：${a||'未作答'}　正確答案：${q.ans}</div></details>`}).join('');
   $('#view').innerHTML=`<div class="stats"><div class="stat"><b>${sc}</b><span>得分（滿分 ${max}）</span></div><div class="stat"><b>${M.l.filter((q,i)=>(M.a[i]||'')==q.ans).length}</b><span>答對題數</span></div><div class="stat"><b>${M.l.filter((q,i)=>!M.a[i]).length}</b><span>未作答</span></div></div>
-  <div class="card"><div class="grid">${g}</div><div class="small">綠＝對，紅＝錯或未答。點題號看詳解。</div></div>
-  <div class="card">${qHTML(q,a,true)}<div class="fb ${a==q.ans?'ok':'bad'}">你的答案：${a||'未作答'}　正確答案：${q.ans}</div></div>
+  <div class="card"><div class="grid">${g}</div><div class="small">綠＝對，紅＝錯或未答。點題號跳到該題。</div></div>
+  <div class="row" style="justify-content:space-between;align-items:center"><h2 style="margin:0">全部題目與答案</h2>${allBtn()}</div>
+  <div class="card">${list}</div>
   <button class="btn" onclick="M=null;go('mock')">再考一份</button>`}
+function openR(i){const e=document.getElementById('r'+i);e.open=true;e.scrollIntoView({behavior:'smooth',block:'start'})}
 /* ---------- 錯題本 ---------- */
 function wrong(){
   const w=Q.filter(q=>q.s==CUR&&ST[q.id]&&ST[q.id].last===false);
