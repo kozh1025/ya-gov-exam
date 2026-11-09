@@ -73,7 +73,7 @@ function save(){try{localStorage.setItem(ukey(),JSON.stringify(ST))}catch(e){}}
 function saveU(){try{localStorage.setItem('yb-gov-users',JSON.stringify(U))}catch(e){}}
 loadST();
 function userBar(){$('#users').innerHTML='<span class="small">目前使用者：</span>'+U.names.map((n,i)=>`<button class="chip ${U.cur==i?'on':''}" onclick="switchUser(${i})">${esc(n)}</button>`).join('')}
-function switchUser(i){if(i==U.cur)return;if(M&&M.l&&!M.done&&!confirm('整卷作答中，換人會放棄這份卷子，確定？'))return;U.cur=i;saveU();loadST();P=null;M=null;if(timerH){clearInterval(timerH);timerH=null}userBar();go(tab)}
+function switchUser(i){if(i==U.cur)return;if(M&&M.l&&!M.done&&!confirm('整卷作答中，換人會放棄這份卷子，確定？'))return;U.cur=i;saveU();loadST();P=null;M=null;if(timerH){clearInterval(timerH);timerH=null}userBar();go(tab,true)}
 function rec(q,ok){const r=ST[q.id]||{r:0,w:0,last:null};if(ok)r.r++;else r.w++;r.last=ok;ST[q.id]=r;save()}
 const $=s=>document.querySelector(s);
 const isMulti=q=>q.ans.length>1;
@@ -84,7 +84,7 @@ function toggleAll(){SHOWALL=!SHOWALL;if(tab=='practice')drawP();else if(tab=='m
 function allBtn(){return `<button class="btn ghost" style="padding:5px 14px;font-size:14px" onclick="toggleAll()">${SHOWALL?'收合全部答案':'展開全部答案'}</button>`}
 let tab='practice',P=null,M=null,timerH=null,CUR=0;
 try{const c=localStorage.getItem('yb-gov-cur');if(c!==null&&c!=='')CUR=+c}catch(e){}
-function chooseSubj(i){if(M&&M.l&&!M.done&&!confirm('整卷作答中，換科目會放棄這份卷子，確定？'))return;CUR=i;P=null;M=null;if(timerH){clearInterval(timerH);timerH=null}try{localStorage.setItem('yb-gov-cur',i)}catch(e){}go(tab)}
+function chooseSubj(i){if(M&&M.l&&!M.done&&!confirm('整卷作答中，換科目會放棄這份卷子，確定？'))return;CUR=i;P=null;M=null;if(timerH){clearInterval(timerH);timerH=null}try{localStorage.setItem('yb-gov-cur',i)}catch(e){}go(tab,true)}
 function subjBar(){return `<div class="row">${SJ.map((n,i)=>`<button class="chip ${CUR==i?'on':''}" style="font-size:16px;padding:6px 16px" onclick="chooseSubj(${i})">${n}</button>`).join('')}</div>`}
 const TABS=[['practice','刷題'],['mock','整卷模擬'],['wrong','錯題本'],['stat','紀錄']];
 function setTabH(){document.documentElement.style.setProperty('--tabh',($('#tabs').offsetHeight-2)+'px')}
@@ -92,7 +92,7 @@ function jumpTop(){setTabH();const c=document.querySelector('#view .card');if(!c
 window.addEventListener('resize',()=>{try{setTabH()}catch(e){}});
 function goM(i){M.i=i;drawM();jumpTop()}
 function drawTabs(){$('#tabs').innerHTML=TABS.map(t=>`<button class="tab ${tab==t[0]?'on':''}" onclick="go('${t[0]}')">${t[1]}</button>`).join('')}
-function go(t){tab=t;if(timerH&&t!='mock'){clearInterval(timerH);timerH=null}drawTabs();setTabH();({practice,mock,wrong,stat})[t]();window.scrollTo(0,0)}
+function go(t,keep){tab=t;if(timerH&&t!='mock'){clearInterval(timerH);timerH=null}drawTabs();setTabH();({practice,mock,wrong,stat})[t]();if(!keep)window.scrollTo(0,0)}
 function qHTML(q,sel,reveal){
   const multi=isMulti(q);
   let h=`<div class="qno">${q.y} 年 · ${SJ[q.s]} · 第 ${q.n} 題 ${multi?'<span class="tag t-todo">複選題</span>':''}</div>`;
